@@ -35,7 +35,7 @@ Run : ''' ls -al ~/.ssh '''
 
 ### Find out which exact key is being offered to GitHub
 
-Run : ''' ssh -vT git@github.com '''
+Run : - ''' ssh -vT git@github.com '''
 
     - Look for lines containing Offering public key. The path shown is the key file currently being used.
 
@@ -115,4 +115,3 @@ Now it should say:
 
     ''' git push -u origin main '''
 
-    
