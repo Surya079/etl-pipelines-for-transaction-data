@@ -18,6 +18,7 @@ from api.constants import (
     DEVICE_INFO,
     ISSUER_BANKS,
     MERCHANT_NAMES,
+
 )
 
 fake = Faker()
@@ -50,5 +51,22 @@ def generate_transactions():
     card_holder_name = fake.name()
     card_type = random.choice(CARD_TYPES)
     card_networks = random.choice(CARD_NETWORKS)
+
+    # POS entry mode and card presence
+
+    pos_entry_mode = random.choice(POS_ENTRY_MODES)
+    card_present= pos_entry_mode in ["Chip", "Magnetic Stripe", "Contactless", "Manual Keyed"]
+
+
+    # Merchant details
+    merchant_name = random.choice(MERCHANT_NAMES)
+    merchant_id = f"MID{random.randint(100000, 999999)}"
+    mcc_code = random.choice(list(MCC_CODES.keys()))
+    mcc_description = MCC_CODES[mcc_code]
+
+    # Country and Cities
+    country = random.choice(COUNTRIES_CITIES.keys())
+    city = random.choice(COUNTRIES_CITIES[country])
+    merchant_postral_code = fake.postal_code()
 
     
