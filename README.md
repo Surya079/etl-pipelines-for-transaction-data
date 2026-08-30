@@ -29,7 +29,7 @@ A FastAPI application that generates realistic synthetic financial transaction d
    venv\Scripts\activate           # Windows
    ```
 
-=========================================== END ===============================
+=========================================
 
 # Git Permission error resolution when pushing code, step by step:
 
