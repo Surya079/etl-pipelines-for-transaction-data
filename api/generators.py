@@ -2,7 +2,7 @@ from faker import Faker
 import uuid
 import random
 import datetime
-from utills import get_random_date_utc
+from .utills import get_random_date_utc
 from api.constants import (
     CARD_NETWORKS,
     CARD_TYPES,
@@ -34,8 +34,8 @@ def generate_transactions():
     # Generate a base datetime (UTC) within the last 30 days
     trans_dt_utc = get_random_date_utc()
 
-    offset_hours = random.random(-12, 14)
-    offset = datetime.timedelta(hours=offset_hours)
+    offset_hours = random.randint(-12, 14)
+    offset = datetime.timezone(datetime.timedelta(hours=offset_hours))
     trans_dt_local = trans_dt_utc.astimezone(offset)
 
     transaction_datetime = trans_dt_utc.isoformat()
@@ -46,8 +46,8 @@ def generate_transactions():
     # card_details
     card_number_fulls = fake.credit_card_number().replace(" ", "")
     card_number_masked = f"{card_number_fulls[:4]} **** **** {card_number_fulls[-4:]}"
-    card_expiry = fake.credit_card_expire(date_format="%m%y")
-    card_holder_name = fake.name()
+    card_expiry = fake.credit_card_expire(date_format="%m/%y")
+    cardholder_name = fake.name()
     card_type = random.choice(CARD_TYPES)
     card_network = random.choice(CARD_NETWORKS)
 
@@ -68,9 +68,9 @@ def generate_transactions():
     mcc_description = MCC_CODES[mcc_code]
 
     # Country and Cities
-    country = random.choice(COUNTRIES_CITIES.keys())
+    country = random.choice(list(COUNTRIES_CITIES.keys()))
     city = random.choice(COUNTRIES_CITIES[country])
-    merchant_postral_code = fake.postal_code()
+    merchant_postral_code = fake.postalcode()
 
     # Transaction amount and currency
 
@@ -119,10 +119,10 @@ def generate_transactions():
     # Fraud/risk fields
 
     fraud_label = "Yes" if random.random() < 0.05 else "No"
-    if fraud_label == "Yes":
-        fraud_label = random.randint(60, 100)
-    else:
-        fraud_score = random.randint(0, 30)
+
+    fraud_score = (
+        random.randint(60, 100) if fraud_label == "Yes" else random.randint(0, 30)
+    )
 
     # Risk indicators (optional, filled if fraud)
 
@@ -150,65 +150,54 @@ def generate_transactions():
 
     # Build the final dictionary
 
-    transaction ={
-
-        #Transaction identifier
-        "transaction_id":str(uuid.uuid4()),
-        "trace_number":f"{random.random(0, 999999):06d}",
-        "retriveval_reference_number":''.join(random.choice('0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ', K=12)),
-
-        #Timestamps
+    transaction = {
+        # Transaction identifier
+        "transaction_id": str(uuid.uuid4()),
+        "trace_number": f"{random.randint(0, 999999):06d}",
+        "retrieval_reference_number": "".join(
+            "".join(random.choices("0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ", k=12))
+        ),
+        # Timestamps
         "transaction_datetime": transaction_datetime,
-        "local_transaction_datetime":local_transaction_datetime,
-        "posting_date":posting_date,
-
-
-        # Card details    
-        "card_number":card_number_masked,
-        "card_expiry":card_expiry,
-        "card_holder_name":card_holder_name,
-        "card_type":card_type,
-        "card_network":card_network,
-        "card_present":card_present,
-
+        "local_transaction_datetime": local_transaction_datetime,
+        "posting_date": posting_date,
+        # Card details
+        "card_number": card_number_masked,
+        "card_expiry": card_expiry,
+        "cardholder_name": cardholder_name,
+        "card_type": card_type,
+        "card_network": card_network,
+        "card_present": card_present,
         # Merchant details
-        "merchant_name":merchant_name,
-        "merchant_id":merchant_id,
-        "mcc":mcc_code,
-        "mcc_description":mcc_description,
-        "merchant_city":city,
-        "merchant_country":country,
-        "merchant_postal_code":merchant_postral_code,
-
+        "merchant_name": merchant_name,
+        "merchant_id": merchant_id,
+        "mcc": mcc_code,
+        "mcc_description": mcc_description,
+        "merchant_city": city,
+        "merchant_country": country,
+        "merchant_postal_code": merchant_postral_code,
         # Transaction details
-        "amount":amount,
-        "currency":currency,
-        "original_amount":original_amount,
-        "transaction_type":transaction_type,
-        "pos_entry_mode":pos_entry_mode,
-        "terminal_id":terminal_id,
-
+        "amount": amount,
+        "currency": currency,
+        "original_amount": original_amount,
+        "transaction_type": transaction_type,
+        "pos_entry_mode": pos_entry_mode,
+        "terminal_id": terminal_id,
         # Network / processing
-
-        "acquirer_bank":acquirer_bank,
-        "issuer_bank":issuer_bank,
-        "network":network,
-        "authorization_response_code":auth_response_code,
-        "transaction_status":transaction_status,
-
+        "acquirer_bank": acquirer_bank,
+        "issuer_bank": issuer_bank,
+        "network": network,
+        "authorization_response_code": auth_response_code,
+        "transaction_status": transaction_status,
         # Fraud and risk
-        "fraud_score":fraud_score,
-        "fraud_label":fraud_label,
-        "risk_indicators":risk_indicators,
-
+        "fraud_score": fraud_score,
+        "fraud_label": fraud_label,
+        "risk_indicators": risk_indicators,
         # Additional fields
-        "device_info":device_info,
-        "ip_address":ip_address,
-        "user_id":user_id,
-        "account_id":account_id
+        "device_info": device_info,
+        "ip_address": ip_address,
+        "user_id": user_id,
+        "account_id": account_id,
     }
 
     return transaction
-
-
-    

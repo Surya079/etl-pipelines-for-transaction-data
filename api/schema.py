@@ -156,3 +156,10 @@ class Transaction(BaseModel):
                 "account_id": "9c8b7a6f-5e4d-3c2b-1a0f-9e8d7c6b5a4f",
             }
         }
+
+
+class TransactionResponse(BaseModel):
+    page: int
+    limit: int
+    total: int
+    data: List[Transaction]
