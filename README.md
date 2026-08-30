@@ -1,27 +1,59 @@
-DATA ENGINEERING DATA ETL PIPELINE
+# DATA ENGINEERING DATA ETL PIPELINE
+
+## Synthetic Transaction Generator API
+
+A FastAPI application that generates realistic synthetic financial transaction data for testing, simulation, and development purposes. The API returns random transactions with many fields covering card details, merchant information, amounts, timestamps, and fraud indicators.
+
+## Features
+
+- Generate single or multiple random transactions.
+- Rich set of fields modeled after real payment processing data.
+- Uses [Faker](https://faker.readthedocs.io/) for realistic names, addresses, and other personal data.
+- Pydantic schema for validation and automatic OpenAPI documentation.
+- No database required – all data is generated on the fly.
+
+## Requirements
+
+- Python 3.9+
+- Dependencies listed in `requirements.txt` (install with `pip install -r requirements.txt`).
+
+## Installation and Local Run
+
+1. **Clone the repository** (or download the code).
+
+2. **Create and activate a virtual environment** (recommended):
+
+   ```bash
+   python -m venv venv
+   source venv/bin/activate        # Linux/macOS
+   venv\Scripts\activate           # Windows
+   ```
+
+=========================================== END ============================================================
 
 # Git Permission error resolution when pushing code, step by step:
 
 ## STEP 1
 
-### Understand the error message 
+### Understand the error message
+
 '''
-    ERROR: Permission to <owner>/<repo>.git denied to <authenticated-user>.
+ERROR: Permission to <owner>/<repo>.git denied to <authenticated-user>.
 '''
 
     - GitHub is telling you that your SSH key belongs to <authenticated-user>, but that account doesn’t have write access to the repository.
 
 ## STEP 2
 
-###  Check which GitHub account SSH is currently using
+### Check which GitHub account SSH is currently using
 
-Run :  ''' ssh -T git@github.com '''
+Run : ''' ssh -T git@github.com '''
 
 Expected output: ''' Hi <authenticated-user>! You've successfully authenticated... '''
 
     -   This confirms the account your current SSH key is tied to. If it’s the wrong one, continue.
 
-## STEP 3 
+## STEP 3
 
 ### List all SSH keys on your machine
 
@@ -45,52 +77,52 @@ Run : - ''' ssh -vT git@github.com '''
 
 ### Obtain or create the correct SSH key
 
-* Option A – You already have a key for the correct account
-    - If a key exists (e.g., id_ed25519_surya079) but isn’t being used, skip to Step 6.
-* Option B – Generate a new key for the correct GitHub account
-    - ''' ssh-keygen -t ed25519 -C "your_email@example.com" -f ~/.ssh/id_ed25519_correct_account '''
+- Option A – You already have a key for the correct account
+  - If a key exists (e.g., id_ed25519_surya079) but isn’t being used, skip to Step 6.
+- Option B – Generate a new key for the correct GitHub account
+  - ''' ssh-keygen -t ed25519 -C "your_email@example.com" -f ~/.ssh/id_ed25519_correct_account '''
 
-    - -C adds a comment (usually your email) to identify the key.
+  - -C adds a comment (usually your email) to identify the key.
 
-    - -f sets a custom filename so you don’t overwrite existing keys.
-        Press Enter to accept the default location (the custom name) and choose a passphrase (optional).
+  - -f sets a custom filename so you don’t overwrite existing keys.
+    Press Enter to accept the default location (the custom name) and choose a passphrase (optional).
 
-* Explanation: This creates a new private/public key pair specifically for the account you want to use.
+- Explanation: This creates a new private/public key pair specifically for the account you want to use.
 
 ## STEP 6
 
 ### Add the public key to the correct GitHub account
 
-* Copy the public key:
-    - cat ~/.ssh/id_ed25519_correct_account.pub
-* Go to GitHub → Settings → SSH and GPG keys → New SSH key.
-* Paste the key and save.
+- Copy the public key:
+  - cat ~/.ssh/id_ed25519_correct_account.pub
+- Go to GitHub → Settings → SSH and GPG keys → New SSH key.
+- Paste the key and save.
 
-* Explanation: GitHub needs to know that this key is allowed to authenticate as the desired account.
+- Explanation: GitHub needs to know that this key is allowed to authenticate as the desired account.
 
 ## STEP 7
 
 ### Force SSH to use the correct key for GitHub
 
-* Create or edit ~/.ssh/config:
-    - nano ~/.ssh/config
+- Create or edit ~/.ssh/config:
+  - nano ~/.ssh/config
 
-* Add (or modify) these lines:
-    '''
-        Host github.com
-        HostName github.com
-        User git
-        IdentityFile ~/.ssh/id_ed25519_correct_account
-        IdentitiesOnly yes
-    '''
+- Add (or modify) these lines:
+  '''
+  Host github.com
+  HostName github.com
+  User git
+  IdentityFile ~/.ssh/id_ed25519_correct_account
+  IdentitiesOnly yes
+  '''
 
-* IdentityFile points to the private key you want to use.
+- IdentityFile points to the private key you want to use.
 
-* IdentitiesOnly yes tells SSH to only try that key and ignore others.
+- IdentitiesOnly yes tells SSH to only try that key and ignore others.
 
 Save and exit (Ctrl+O, Enter, Ctrl+X in nano).
 
-* Explanation: By default, SSH may try several keys and pick the first one that GitHub accepts. This forces it to use exactly the key you specify.
+- Explanation: By default, SSH may try several keys and pick the first one that GitHub accepts. This forces it to use exactly the key you specify.
 
 ## STEP 8
 
@@ -98,16 +130,14 @@ Save and exit (Ctrl+O, Enter, Ctrl+X in nano).
 
 Run : ''' ssh -T git@github.com '''
 
-Now it should say:
-    * ''' Hi <correct-account>! You've successfully authenticated... '''
+Now it should say: \* ''' Hi <correct-account>! You've successfully authenticated... '''
 
-* If it still shows the wrong account, double‑check that:
+- If it still shows the wrong account, double‑check that:
+  - The key file path in ~/.ssh/config is correct.
 
-    - The key file path in ~/.ssh/config is correct.
+  - The public key was added to the correct GitHub account.
 
-    - The public key was added to the correct GitHub account.
-
-    - IdentitiesOnly yes is present.
+  - IdentitiesOnly yes is present.
 
 ## STEP 9
 
@@ -115,3 +145,4 @@ Now it should say:
 
     ''' git push -u origin main '''
 
+==================================================== END ===========================================================
