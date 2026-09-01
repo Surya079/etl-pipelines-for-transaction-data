@@ -3,7 +3,7 @@ import uuid
 import random
 import datetime
 from .utills import get_random_date_utc
-from api.constants import (
+from .constants import (
     CARD_NETWORKS,
     CARD_TYPES,
     CITIES,
