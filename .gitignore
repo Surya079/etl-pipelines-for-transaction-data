@@ -1,10 +1,10 @@
 venv/
 __pycache__/
 *.pyc
-config/.env
 .pytest_cache/
 airflow/
 *.log
 data/
 .idea/
 .vscode/
+.env
