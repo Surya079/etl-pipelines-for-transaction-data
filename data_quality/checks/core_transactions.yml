@@ -1,0 +1,12 @@
+checks for core_transactions:
+  - row_count > 0
+  - missing_count(transaction_id) = 0
+  - missing_count(transaction_datetime) = 0
+  - missing_percent(amount) < 1%
+  - invalid_count(amount) = 0:
+      valid min: 0
+  - invalid_count(fraud_label) = 0:
+      valid values: [true, false]
+  - duplicate_count(transaction_id) = 0
+  - invalid_count(mcc) = 0:
+      valid length: 4

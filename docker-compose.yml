@@ -1,5 +1,3 @@
-version: "3.9"
-
 services:
   postgres:
     image: postgres:15
@@ -17,6 +15,7 @@ services:
       interval: 5s
       timeout: 5s
       retries: 10
+    command: ["postgres", "-c", "timezone=UTC"]
 
   redis:
     image: redis:7
@@ -29,7 +28,7 @@ services:
   api:
     build:
       context: .
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile.api
     environment:
       DATABASE_URL: postgresql+psycopg2://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
       API_BASE_URL: http://api:8000
@@ -41,7 +40,9 @@ services:
         condition: service_healthy
 
   airflow-init:
-    image: apache/airflow:2.8.0-python3.10
+    build:
+      context: .
+      dockerfile: Dockerfile.airflow
     environment:
       AIRFLOW__CORE__EXECUTOR: CeleryExecutor
       AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://${AIRFLOW_DB_USER}:${AIRFLOW_DB_PASSWORD}@postgres:5432/${AIRFLOW_DB_NAME}
@@ -49,10 +50,24 @@ services:
       AIRFLOW__CELERY__RESULT_BACKEND: db+postgresql://${AIRFLOW_DB_USER}:${AIRFLOW_DB_PASSWORD}@postgres:5432/${AIRFLOW_DB_NAME}
       AIRFLOW__CORE__LOAD_EXAMPLES: "false"
       AIRFLOW__CORE__FERNET_KEY: ${AIRFLOW_FERNET_KEY:-46BKJoQYlPPOexq0OhDZnIlNepKFf87WFwLbfzqDDho=}
+      AIRFLOW__WEBSERVER__SECRET_KEY: "e9b2c8d1-4f5a-4a8b-9c2d-3e4f5a6b7c8d"
+      AIRFLOW__CORE__HOSTNAME_CALLABLE: "airflow.utils.net.get_host_ip_address"
+      AIRFLOW__WEBSERVER__BASE_URL: http://localhost:8080
+      AIRFLOW__WEBSERVER__WEB_SERVER_URL: http://localhost:8080
+      API_BASE_URL: http://api:8000
+      DATABASE_URL: postgresql+psycopg2://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+      PYTHONPATH: /opt/airflow
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: banking_etl
     volumes:
       - ./dags:/opt/airflow/dags
       - ./scripts:/opt/airflow/scripts
       - ./config:/opt/airflow/config
+      - ./datawarehouse:/opt/airflow/datawarehouse
+      - ./data_quality:/opt/airflow/data_quality
     command: >
       bash -c "airflow db init &&
                airflow users create --username ${AIRFLOW_ADMIN_USER} --password ${AIRFLOW_ADMIN_PASSWORD} --firstname Admin --lastname User --role Admin --email ${AIRFLOW_ADMIN_EMAIL}"
@@ -64,7 +79,9 @@ services:
     restart: "no"
 
   airflow-webserver:
-    image: apache/airflow:2.8.0-python3.10
+    build:
+      context: .
+      dockerfile: Dockerfile.airflow
     environment:
       AIRFLOW__CORE__EXECUTOR: CeleryExecutor
       AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://${AIRFLOW_DB_USER}:${AIRFLOW_DB_PASSWORD}@postgres:5432/${AIRFLOW_DB_NAME}
@@ -72,10 +89,24 @@ services:
       AIRFLOW__CELERY__RESULT_BACKEND: db+postgresql://${AIRFLOW_DB_USER}:${AIRFLOW_DB_PASSWORD}@postgres:5432/${AIRFLOW_DB_NAME}
       AIRFLOW__CORE__LOAD_EXAMPLES: "false"
       AIRFLOW__CORE__FERNET_KEY: ${AIRFLOW_FERNET_KEY:-46BKJoQYlPPOexq0OhDZnIlNepKFf87WFwLbfzqDDho=}
+      AIRFLOW__WEBSERVER__BASE_URL: http://localhost:8080
+      AIRFLOW__WEBSERVER__WEB_SERVER_URL: http://localhost:8080
+      AIRFLOW__WEBSERVER__SECRET_KEY: "e9b2c8d1-4f5a-4a8b-9c2d-3e4f5a6b7c8d" # example
+      AIRFLOW__CORE__HOSTNAME_CALLABLE: "airflow.utils.net.get_host_ip_address"
+      DATABASE_URL: postgresql+psycopg2://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+      API_BASE_URL: http://api:8000
+      PYTHONPATH: /opt/airflow
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: banking_etl
     volumes:
       - ./dags:/opt/airflow/dags
       - ./scripts:/opt/airflow/scripts
       - ./config:/opt/airflow/config
+      - ./datawarehouse:/opt/airflow/datawarehouse
+      - ./data_quality:/opt/airflow/data_quality
     ports:
       - "${AIRFLOW_WEBSERVER_PORT}:8080"
     depends_on:
@@ -84,7 +115,9 @@ services:
     command: airflow webserver
 
   airflow-scheduler:
-    image: apache/airflow:2.8.0-python3.10
+    build:
+      context: .
+      dockerfile: Dockerfile.airflow
     environment:
       AIRFLOW__CORE__EXECUTOR: CeleryExecutor
       AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://${AIRFLOW_DB_USER}:${AIRFLOW_DB_PASSWORD}@postgres:5432/${AIRFLOW_DB_NAME}
@@ -92,17 +125,33 @@ services:
       AIRFLOW__CELERY__RESULT_BACKEND: db+postgresql://${AIRFLOW_DB_USER}:${AIRFLOW_DB_PASSWORD}@postgres:5432/${AIRFLOW_DB_NAME}
       AIRFLOW__CORE__LOAD_EXAMPLES: "false"
       AIRFLOW__CORE__FERNET_KEY: ${AIRFLOW_FERNET_KEY:-46BKJoQYlPPOexq0OhDZnIlNepKFf87WFwLbfzqDDho=}
+      AIRFLOW__WEBSERVER__SECRET_KEY: "e9b2c8d1-4f5a-4a8b-9c2d-3e4f5a6b7c8d"
+      AIRFLOW__CORE__HOSTNAME_CALLABLE: "airflow.utils.net.get_host_ip_address"
+      AIRFLOW__WEBSERVER__BASE_URL: http://localhost:8080
+      AIRFLOW__WEBSERVER__WEB_SERVER_URL: http://localhost:8080
+      API_BASE_URL: http://api:8000
+      DATABASE_URL: postgresql+psycopg2://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+      PYTHONPATH: /opt/airflow
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: banking_etl
     volumes:
       - ./dags:/opt/airflow/dags
       - ./scripts:/opt/airflow/scripts
       - ./config:/opt/airflow/config
+      - ./datawarehouse:/opt/airflow/datawarehouse
+      - ./data_quality:/opt/airflow/data_quality
     depends_on:
       airflow-init:
         condition: service_completed_successfully
     command: airflow scheduler
 
   airflow-worker:
-    image: apache/airflow:2.8.0-python3.10
+    build:
+      context: .
+      dockerfile: Dockerfile.airflow
     environment:
       AIRFLOW__CORE__EXECUTOR: CeleryExecutor
       AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://${AIRFLOW_DB_USER}:${AIRFLOW_DB_PASSWORD}@postgres:5432/${AIRFLOW_DB_NAME}
@@ -110,10 +159,24 @@ services:
       AIRFLOW__CELERY__RESULT_BACKEND: db+postgresql://${AIRFLOW_DB_USER}:${AIRFLOW_DB_PASSWORD}@postgres:5432/${AIRFLOW_DB_NAME}
       AIRFLOW__CORE__LOAD_EXAMPLES: "false"
       AIRFLOW__CORE__FERNET_KEY: ${AIRFLOW_FERNET_KEY:-46BKJoQYlPPOexq0OhDZnIlNepKFf87WFwLbfzqDDho=}
+      AIRFLOW__WEBSERVER__SECRET_KEY: "e9b2c8d1-4f5a-4a8b-9c2d-3e4f5a6b7c8d"
+      AIRFLOW__CORE__HOSTNAME_CALLABLE: "airflow.utils.net.get_host_ip_address"
+      AIRFLOW__WEBSERVER__BASE_URL: http://localhost:8080
+      AIRFLOW__WEBSERVER__WEB_SERVER_URL: http://localhost:8080
+      API_BASE_URL: http://api:8000
+      DATABASE_URL: postgresql+psycopg2://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+      PYTHONPATH: /opt/airflow
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: banking_etl
     volumes:
       - ./dags:/opt/airflow/dags
       - ./scripts:/opt/airflow/scripts
       - ./config:/opt/airflow/config
+      - ./datawarehouse:/opt/airflow/datawarehouse
+      - ./data_quality:/opt/airflow/data_quality
     depends_on:
       airflow-init:
         condition: service_completed_successfully

@@ -29,6 +29,14 @@ A FastAPI application that generates realistic synthetic financial transaction d
    venv\Scripts\activate           # Windows
    ```
 
+DQ Checks:
+  * Checks Raw table
+    - ./.venv/Scripts/soda.exe scan -c data_quality/configuration.yml -d postgres data_quality/checks/raw_transactions.yml
+
+  * Checks Core table
+
+    - ./.venv/Scripts/soda.exe scan -c data_quality/configuration.yml -d postgres data_quality/checks/raw_transactions.yml
+    
 ================================================================
 
 # Git Permission error resolution when pushing code, step by step:

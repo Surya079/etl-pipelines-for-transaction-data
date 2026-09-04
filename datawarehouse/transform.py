@@ -116,7 +116,6 @@ def run_transform():
             conn.execute(stmt)
             inserted_count += 1
 
-        conn.commit()
         print(f"Inserted: {inserted_count}, Skipped: {skipped_count}")
 
 
