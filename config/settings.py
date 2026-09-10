@@ -6,6 +6,9 @@ from sqlalchemy.engine import URL
 BASE_DIR = Path(__file__).resolve().parent.parent
 load_dotenv(BASE_DIR / ".env", override=False)
 
+TEST_DATABASE_URL = os.getenv("TEST_DATABASE_URL") or os.getenv("DATABASE_URL")
+if not TEST_DATABASE_URL:
+    raise RuntimeError("TEST_DATABASE_URL or DATABASE_URL must be set")
 
 class Settings:
     def __init__(self):
