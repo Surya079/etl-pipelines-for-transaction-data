@@ -14,11 +14,10 @@ from sqlalchemy import inspect
 from datawarehouse.models import metadata, raw_transactions, core_transactions
 from config.settings import settings
 
-TEST_DATABASE_URL = os.getenv(
-    "TEST_DATABASE_URL",
-    "postgresql://postgres:postgres@0.0.0.0:5432/banking_etl_test",
-)
+TEST_DATABASE_URL = os.getenv("TEST_DATABASE_URL") or os.getenv("DATABASE_URL")
 
+if not TEST_DATABASE_URL:
+    raise RuntimeError("TEST_DATABASE_URL or DATABASE_URL must be set")
 
 @pytest.fixture(scope="session")
 def db_engine():
