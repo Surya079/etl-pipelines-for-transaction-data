@@ -16,6 +16,8 @@ services:
       timeout: 5s
       retries: 10
     command: ["postgres", "-c", "timezone=UTC"]
+    networks:
+      - hadoopnet
 
   redis:
     image: redis:7
@@ -24,20 +26,24 @@ services:
       interval: 5s
       timeout: 3s
       retries: 10
+    networks:
+      - hadoopnet
 
-  api:
-    build:
-      context: .
-      dockerfile: Dockerfile.api
-    environment:
-      DATABASE_URL: postgresql+psycopg2://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
-      API_BASE_URL: http://api:8000
-      PYTHONPATH: /app
-    ports:
-      - "${API_PORT}:8000"
-    depends_on:
-      postgres:
-        condition: service_healthy
+  # api:
+  #   build:
+  #     context: .
+  #     dockerfile: Dockerfile.api
+  #   environment:
+  #     DATABASE_URL: postgresql+psycopg2://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+  #     API_BASE_URL: http://api:8000
+  #     PYTHONPATH: /app
+  #   ports:
+  #     - "${API_PORT}:8000"
+  #   depends_on:
+  #     postgres:
+  #       condition: service_healthy
+  #   networks:
+  #     - hadoopnet
 
   airflow-init:
     build:
@@ -49,8 +55,8 @@ services:
       AIRFLOW__CELERY__BROKER_URL: redis://redis:6379/0
       AIRFLOW__CELERY__RESULT_BACKEND: db+postgresql://${AIRFLOW_DB_USER}:${AIRFLOW_DB_PASSWORD}@postgres:5432/${AIRFLOW_DB_NAME}
       AIRFLOW__CORE__LOAD_EXAMPLES: "false"
-      AIRFLOW__CORE__FERNET_KEY: ${AIRFLOW_FERNET_KEY:-46BKJoQYlPPOexq0OhDZnIlNepKFf87WFwLbfzqDDho=}
-      AIRFLOW__WEBSERVER__SECRET_KEY: "e9b2c8d1-4f5a-4a8b-9c2d-3e4f5a6b7c8d"
+      AIRFLOW__CORE__FERNET_KEY: ${AIRFLOW_FERNET_KEY}
+      AIRFLOW__WEBSERVER__SECRET_KEY: ${AIRFLOW__WEBSERVER__SECRET_KEY}
       AIRFLOW__CORE__HOSTNAME_CALLABLE: "airflow.utils.net.get_host_ip_address"
       AIRFLOW__WEBSERVER__BASE_URL: http://localhost:8080
       AIRFLOW__WEBSERVER__WEB_SERVER_URL: http://localhost:8080
@@ -59,15 +65,17 @@ services:
       PYTHONPATH: /opt/airflow
       POSTGRES_HOST: postgres
       POSTGRES_PORT: 5432
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: banking_etl
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
     volumes:
       - ./dags:/opt/airflow/dags
       - ./scripts:/opt/airflow/scripts
       - ./config:/opt/airflow/config
       - ./datawarehouse:/opt/airflow/datawarehouse
       - ./data_quality:/opt/airflow/data_quality
+      - ./spark-apps:/opt/spark-apps
+      - ./hadoop-config/core-site.xml:/opt/hadoop/etc/hadoop/core-site.xml
     command: >
       bash -c "airflow db init &&
                airflow users create --username ${AIRFLOW_ADMIN_USER} --password ${AIRFLOW_ADMIN_PASSWORD} --firstname Admin --lastname User --role Admin --email ${AIRFLOW_ADMIN_EMAIL}"
@@ -77,6 +85,8 @@ services:
       redis:
         condition: service_healthy
     restart: "no"
+    networks:
+      - hadoopnet
 
   airflow-webserver:
     build:
@@ -88,31 +98,35 @@ services:
       AIRFLOW__CELERY__BROKER_URL: redis://redis:6379/0
       AIRFLOW__CELERY__RESULT_BACKEND: db+postgresql://${AIRFLOW_DB_USER}:${AIRFLOW_DB_PASSWORD}@postgres:5432/${AIRFLOW_DB_NAME}
       AIRFLOW__CORE__LOAD_EXAMPLES: "false"
-      AIRFLOW__CORE__FERNET_KEY: ${AIRFLOW_FERNET_KEY:-46BKJoQYlPPOexq0OhDZnIlNepKFf87WFwLbfzqDDho=}
+      AIRFLOW__CORE__FERNET_KEY: ${AIRFLOW_FERNET_KEY}
       AIRFLOW__WEBSERVER__BASE_URL: http://localhost:8080
       AIRFLOW__WEBSERVER__WEB_SERVER_URL: http://localhost:8080
-      AIRFLOW__WEBSERVER__SECRET_KEY: "e9b2c8d1-4f5a-4a8b-9c2d-3e4f5a6b7c8d" # example
+      AIRFLOW__WEBSERVER__SECRET_KEY: ${AIRFLOW__WEBSERVER__SECRET_KEY}
       AIRFLOW__CORE__HOSTNAME_CALLABLE: "airflow.utils.net.get_host_ip_address"
       DATABASE_URL: postgresql+psycopg2://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
       API_BASE_URL: http://api:8000
       PYTHONPATH: /opt/airflow
       POSTGRES_HOST: postgres
       POSTGRES_PORT: 5432
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: banking_etl
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
     volumes:
       - ./dags:/opt/airflow/dags
       - ./scripts:/opt/airflow/scripts
       - ./config:/opt/airflow/config
       - ./datawarehouse:/opt/airflow/datawarehouse
       - ./data_quality:/opt/airflow/data_quality
+      - ./spark-apps:/opt/spark-apps
+      - ./hadoop-config/core-site.xml:/opt/hadoop/etc/hadoop/core-site.xml
     ports:
       - "${AIRFLOW_WEBSERVER_PORT}:8080"
     depends_on:
       airflow-init:
         condition: service_completed_successfully
     command: airflow webserver
+    networks:
+      - hadoopnet
 
   airflow-scheduler:
     build:
@@ -124,8 +138,8 @@ services:
       AIRFLOW__CELERY__BROKER_URL: redis://redis:6379/0
       AIRFLOW__CELERY__RESULT_BACKEND: db+postgresql://${AIRFLOW_DB_USER}:${AIRFLOW_DB_PASSWORD}@postgres:5432/${AIRFLOW_DB_NAME}
       AIRFLOW__CORE__LOAD_EXAMPLES: "false"
-      AIRFLOW__CORE__FERNET_KEY: ${AIRFLOW_FERNET_KEY:-46BKJoQYlPPOexq0OhDZnIlNepKFf87WFwLbfzqDDho=}
-      AIRFLOW__WEBSERVER__SECRET_KEY: "e9b2c8d1-4f5a-4a8b-9c2d-3e4f5a6b7c8d"
+      AIRFLOW__CORE__FERNET_KEY: ${AIRFLOW_FERNET_KEY}
+      AIRFLOW__WEBSERVER__SECRET_KEY: ${AIRFLOW__WEBSERVER__SECRET_KEY}
       AIRFLOW__CORE__HOSTNAME_CALLABLE: "airflow.utils.net.get_host_ip_address"
       AIRFLOW__WEBSERVER__BASE_URL: http://localhost:8080
       AIRFLOW__WEBSERVER__WEB_SERVER_URL: http://localhost:8080
@@ -134,19 +148,23 @@ services:
       PYTHONPATH: /opt/airflow
       POSTGRES_HOST: postgres
       POSTGRES_PORT: 5432
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: banking_etl
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
     volumes:
       - ./dags:/opt/airflow/dags
       - ./scripts:/opt/airflow/scripts
       - ./config:/opt/airflow/config
       - ./datawarehouse:/opt/airflow/datawarehouse
       - ./data_quality:/opt/airflow/data_quality
+      - ./spark-apps:/opt/spark-apps
+      - ./hadoop-config/core-site.xml:/opt/hadoop/etc/hadoop/core-site.xml
     depends_on:
       airflow-init:
         condition: service_completed_successfully
     command: airflow scheduler
+    networks:
+      - hadoopnet
 
   airflow-worker:
     build:
@@ -158,8 +176,8 @@ services:
       AIRFLOW__CELERY__BROKER_URL: redis://redis:6379/0
       AIRFLOW__CELERY__RESULT_BACKEND: db+postgresql://${AIRFLOW_DB_USER}:${AIRFLOW_DB_PASSWORD}@postgres:5432/${AIRFLOW_DB_NAME}
       AIRFLOW__CORE__LOAD_EXAMPLES: "false"
-      AIRFLOW__CORE__FERNET_KEY: ${AIRFLOW_FERNET_KEY:-46BKJoQYlPPOexq0OhDZnIlNepKFf87WFwLbfzqDDho=}
-      AIRFLOW__WEBSERVER__SECRET_KEY: "e9b2c8d1-4f5a-4a8b-9c2d-3e4f5a6b7c8d"
+      AIRFLOW__CORE__FERNET_KEY: ${AIRFLOW_FERNET_KEY}
+      AIRFLOW__WEBSERVER__SECRET_KEY: ${AIRFLOW__WEBSERVER__SECRET_KEY}
       AIRFLOW__CORE__HOSTNAME_CALLABLE: "airflow.utils.net.get_host_ip_address"
       AIRFLOW__WEBSERVER__BASE_URL: http://localhost:8080
       AIRFLOW__WEBSERVER__WEB_SERVER_URL: http://localhost:8080
@@ -168,19 +186,132 @@ services:
       PYTHONPATH: /opt/airflow
       POSTGRES_HOST: postgres
       POSTGRES_PORT: 5432
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: banking_etl
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
     volumes:
       - ./dags:/opt/airflow/dags
       - ./scripts:/opt/airflow/scripts
       - ./config:/opt/airflow/config
       - ./datawarehouse:/opt/airflow/datawarehouse
       - ./data_quality:/opt/airflow/data_quality
+      - ./spark-apps:/opt/spark-apps
+      - ./hadoop-config/core-site.xml:/opt/hadoop/etc/hadoop/core-site.xml
     depends_on:
       airflow-init:
         condition: service_completed_successfully
     command: airflow celery worker
+    networks:
+      - hadoopnet
+
+  hdfs-namenode:
+    image: bde2020/hadoop-namenode:2.0.0-hadoop3.2.1-java8
+    container_name: hdfs-namenode
+    environment:
+      - CLUSTER_NAME=hadoop-cluster
+      - CORE_CONF_fs_defaultFS=hdfs://hdfs-namenode:9000
+    ports:
+      - "9870:9870"
+    volumes:
+      - hdfs-nn-data:/hadoop/dfs/name
+      - ./spark-apps:/opt/spark-apps
+    networks:
+      - hadoopnet
+
+  hdfs-datanode:
+    image: bde2020/hadoop-datanode:2.0.0-hadoop3.2.1-java8
+    container_name: hdfs-datanode
+    depends_on:
+      - hdfs-namenode
+    links:
+      - hdfs-namenode:hdfs-namenode
+    environment:
+      - CLUSTER_NAME=hadoop-cluster
+      - CORE_CONF_fs_defaultFS=hdfs://hdfs-namenode:9000
+      - HDFS_CONF_dfs_replication=1
+      # - SERVICE_PRECONDITION="hdfs-namenode:9870"
+    volumes:
+      - hdfs-dn-data:/hadoop/dfs/data
+      - ./spark-apps:/opt/spark-apps
+    networks:
+      - hadoopnet
+
+  spark-master:
+    image: apache/spark:3.5.1
+    container_name: spark-master
+    command: /opt/spark/sbin/start-master.sh
+    environment:
+      - SPARK_NO_DAEMONIZE=true
+    ports:
+      - "7077:7077"
+      - "8081:8080"
+    volumes:
+      - ./spark-apps:/opt/spark-apps
+      - ./spark-events:/tmp/spark-events
+      - ./data:/opt/spark-apps/data
+    networks:
+      - hadoopnet
+
+  spark-worker:
+    image: apache/spark:3.5.1
+    container_name: spark-worker
+    command: /opt/spark/sbin/start-worker.sh spark://spark-master:7077
+    environment:
+      - SPARK_NO_DAEMONIZE=true
+    volumes:
+      - ./spark-apps:/opt/spark-apps
+      - ./data:/opt/spark-apps/data
+    networks:
+      - hadoopnet
+    depends_on:
+      - spark-master
+
+  jupyter:
+    image: jupyter/pyspark-notebook:spark-3.5.0
+    container_name: jupyter
+    environment:
+      - JUPYTER_ENABLE_LAB=yes
+      - SPARK_MASTER=spark://spark-master:7077
+      - PYSPARK_PYTHON=python3
+    ports:
+      - "8888:8888" # Jupyter UI
+      - "4040:4040" # Spark application UI
+    volumes:
+      - ./spark-apps:/home/work
+      - ./spark-events:/tmp/spark-events
+    networks:
+      - hadoopnet
+    depends_on:
+      - spark-master
+      - hdfs-namenode
+
+  nifi:
+    image: apache/nifi:latest
+    container_name: nifi
+    ports:
+      - "8443:8443" # HTTPS UI
+      - "10000:10000" # Site-to-site remote input
+    environment:
+      - SINGLE_USER_CREDENTIALS_USERNAME=admin
+      - SINGLE_USER_CREDENTIALS_PASSWORD=adminadminadmin
+      - NIFI_SENSITIVE_PROPS_KEY=12345678901234567890A
+    volumes:
+      - ./nifi/conf:/opt/nifi/nifi-current/conf
+      - ./nifi/database_repository:/opt/nifi/nifi-current/database_repository
+      - ./nifi/flowfile_repository:/opt/nifi/nifi-current/flowfile_repository
+      - ./nifi/content_repository:/opt/nifi/nifi-current/content_repository
+      - ./nifi/provenance_repository:/opt/nifi/nifi-current/provenance_repository
+      - ./nifi/state:/opt/nifi/nifi-current/state
+      - ./nifi/logs:/opt/nifi/nifi-current/logs
+    networks:
+      - hadoopnet
+    restart: unless-stopped
 
 volumes:
   pgdata:
+  hdfs-nn-data:
+  hdfs-dn-data:
+
+networks:
+  hadoopnet:
+    driver: bridge
