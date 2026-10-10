@@ -61,7 +61,7 @@ def profile_columns(df:DataFrame) -> DataFrame:
             str(dtype),
             total,
             int(null_count),
-            round((null_count/total) * 100, 4) if total else 0.0
+            round((null_count/total) * 100, 4) if total else 0.0,
             int(distinct_count),
             min_value,
             max_value
