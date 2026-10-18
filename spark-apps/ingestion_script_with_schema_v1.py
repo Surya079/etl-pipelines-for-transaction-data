@@ -12,6 +12,8 @@ INGESTION_DATE = date.today().isoformat()
 HDFS_RAW_TARGET = f"{HDFS_RAW_BASE}/ingestion_date={INGESTION_DATE}"
 HDFS_REJECTED_TARGET = f"{HDFS_REJECTED_BASE}/ingestion_date={INGESTION_DATE}"
 
+MANDATORY_COLS = ["clearing_file_id", "transaction_id", "clearing_date"]
+
 
 def main():
 
@@ -29,7 +31,7 @@ def main():
 
     print(f"Total rows read: {total:,}")
 
-    good, rejected = split_good_and_rejected(df)
+    good, rejected = split_good_and_rejected(df, MANDATORY_COLS)
 
     good_count = good.count()
     rejected_count = rejected.count()
@@ -37,7 +39,9 @@ def main():
     print(f"Good rows:     {good_count:,}")
     print(f"Rejected rows: {rejected_count:,}")
 
-    assert good_count + rejected_count == total, "Row count mismatch!"
+    assert (
+        good_count + rejected_count == total
+    ), f"Row count mismatch: good={good_count}, rejected={rejected_count}, total={total}"
 
     print("Writing good rows to raw zone...")
 
