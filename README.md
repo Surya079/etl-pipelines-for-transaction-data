@@ -313,7 +313,7 @@ HADOOP_USER_NAME=root /opt/spark/bin/spark-submit   --master spark://spark-maste
 
 **Merchant daily fact table with reconciliation**
 ```bash
-HADOOP_USER_NAME=root /opt/spark/bin/spark-submit   --master spark://spark-master:7077   --conf spark.sql.shuffle.partitions=8  --conf spark.sql.adaptive.enabled=true  /opt/spark-apps/financial_derived.py
+HADOOP_USER_NAME=root /opt/spark/bin/spark-submit   --master spark://spark-master:7077   --conf spark.sql.shuffle.partitions=8  --conf spark.sql.adaptive.enabled=true  /opt/spark-apps/merchant_daily.py
 
 ```
 
