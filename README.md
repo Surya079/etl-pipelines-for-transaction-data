@@ -305,6 +305,17 @@ HADOOP_USER_NAME=root /opt/spark/bin/spark-submit \
   --py-files /opt/spark-apps/schema/clearing_schema.py \
   /opt/spark-apps/build_bronze_clean_data.py
 ```
+**Financial derived data columns**
+```bash
+HADOOP_USER_NAME=root /opt/spark/bin/spark-submit   --master spark://spark-master:7077   --conf spark.sql.shuffle.partitions=8  --conf spark.sql.adaptive.enabled=true  /opt/spark-apps/financial_derived.py
+
+```
+
+**Merchant daily fact table with reconciliation**
+```bash
+HADOOP_USER_NAME=root /opt/spark/bin/spark-submit   --master spark://spark-master:7077   --conf spark.sql.shuffle.partitions=8  --conf spark.sql.adaptive.enabled=true  /opt/spark-apps/financial_derived.py
+
+```
 
 Or use Jupyter at http://localhost:8888 and run PySpark interactively.
 
