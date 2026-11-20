@@ -25,11 +25,10 @@ from pyspark.sql import functions as F
 from pyspark.sql.types import DecimalType
 
 INGESTION_DATE = date.today().isoformat()
-SILVER_PATH = "hdfs://hdfs-namenode:9000/data/clearing/silver/financials/ingestion_date=2026-10-18"
+SILVER_PATH = f"hdfs://hdfs-namenode:9000/data/clearing/silver/financials/ingestion_date={INGESTION_DATE}"
 OUTPUT_BASE = "hdfs://hdfs-namenode:9000/data/clearing/silver/issuer_daily"
 
-OUTPUT_PATH = f"{OUTPUT_BASE}/ingestion_date=2026-10-18"
-
+OUTPUT_PATH = f"{OUTPUT_BASE}/ingestion_date={INGESTION_DATE}"
 
 def build_issuer_daily(df):
     df = df.withColumn("transaction_date", F.to_date(F.col("posting_date")))
