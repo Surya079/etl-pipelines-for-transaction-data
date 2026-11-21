@@ -231,6 +231,21 @@ def add_validation_flags(df: DataFrame) -> DataFrame:
         )
         reason_cols.append("_rr_fee")
 
+    for col in [
+        "clearing_file_id",
+        "transaction_id",
+        "clearing_date",
+        "merchant_id",
+        "merchant_name",
+        "mcc",
+        "gross_amount",
+        "net_settlement_amount",
+    ]:
+        if col in df.columns:
+            cname = f"_rr_null_{col}"
+            df = df.withColumn(cname, F.when(F.col(col).isNull(), F.lit(f"null_{col}")))
+            reason_cols.append(cname)
+
     # Coalesce first non-null
     df = df.withColumn("_reject_reason", F.coalesce(*[F.col(c) for c in reason_cols]))
 

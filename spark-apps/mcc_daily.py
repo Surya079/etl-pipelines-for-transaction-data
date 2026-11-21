@@ -78,9 +78,7 @@ def build_mcc_daily(df):
     df = df.withColumn("is_domestic_i", F.when(F.col("is_domestic"), 1).otherwise(0))
 
     # Step A: main MCC aggregate
-    mcc_agg = df.groupBy(
-        "mcc", "mcc_description", "merchant_country", "transaction_date"
-    ).agg(
+    mcc_agg = df.groupBy("mcc", "merchant_country", "transaction_date").agg(
         # Volume
         F.count("*").alias("txn_count"),
         F.countDistinct("merchant_id").alias("unique_merchants"),
@@ -104,6 +102,7 @@ def build_mcc_daily(df):
         # Geography
         F.sum("is_domestic_i").alias("domestic_txn_count"),
         F.sum(1 - F.col("is_domestic_i")).alias("cross_border_txn_count"),
+        F.first("mcc_description").alias("mcc_description"),
     )
 
     # Derived metrics on the aggregate
@@ -205,7 +204,7 @@ def main():
 
     # Sanity checks
     print("\nTop 10 MCCs by gross amount:")
-    mcc_daily.groupBy("mcc", "mcc_description").agg(
+    mcc_daily.groupBy("mcc", "merchant_country", "transaction_date").agg(
         F.sum("gross_amount").alias("total_gross"),
         F.sum("txn_count").alias("total_txns"),
         F.avg("avg_ticket").alias("overall_avg_ticket"),
@@ -213,7 +212,7 @@ def main():
     ).orderBy(F.desc("total_gross")).show(10, truncate=False)
 
     print("\nMost concentrated MCCs (highest top_merchant_share):")
-    mcc_daily.groupBy("mcc", "mcc_description").agg(
+    mcc_daily.groupBy("mcc", "merchant_country", "transaction_date").agg(
         F.max("top_merchant_share").alias("max_concentration"),
         F.first("top_merchant_name").alias("example_top_merchant"),
     ).orderBy(F.desc("max_concentration")).show(10, truncate=False)

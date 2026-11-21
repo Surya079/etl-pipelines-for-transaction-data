@@ -317,6 +317,17 @@ HADOOP_USER_NAME=root /opt/spark/bin/spark-submit   --master spark://spark-maste
 
 ```
 
+**Aggregate silver financials from the issuer's perspective**
+```bash
+HADOOP_USER_NAME=root /opt/spark/bin/spark-submit   --master spark://spark-master:7077   --conf spark.sql.shuffle.partitions=8  --conf spark.sql.adaptive.enabled=true  /opt/spark-apps/issuer_daily.py
+
+```
+**Aggregates financials by mcc + merchant_country + transaction_date**
+```bash
+HADOOP_USER_NAME=root /opt/spark/bin/spark-submit   --master spark://spark-master:7077   --conf spark.sql.shuffle.partitions=8  --conf spark.sql.adaptive.enabled=true  /opt/spark-apps/mcc_daily.py
+
+```
+
 Or use Jupyter at http://localhost:8888 and run PySpark interactively.
 
 ---
